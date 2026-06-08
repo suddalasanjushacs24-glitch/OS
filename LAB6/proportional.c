@@ -3,57 +3,101 @@
 #define MAX 10
 #define TIME_QUANTUM 10
 
-int main() {
-    int n, i, completed = 0;
+typedef struct
+{
+    int pid;
+    int capacity;
+    int period;
+    int weight;
+    int remaining;
+    int next_arrival;
+} Task;
 
-    int burst[MAX], weight[MAX];
-    int remaining[MAX];
+int main()
+{
+    Task t[MAX];
 
-    float total_weight = 0;
+    int n, i, time;
+    int total_weight = 0;
 
-    printf("Enter number of processes: ");
+    printf("Enter number of tasks: ");
     scanf("%d", &n);
 
-    // Input
-    for (i = 0; i < n; i++) {
-        printf("\nProcess %d\n", i + 1);
+    for(i = 0; i < n; i++)
+    {
+        t[i].pid = i + 1;
 
-        printf("Burst Time: ");
-        scanf("%d", &burst[i]);
+        printf("\nTask %d\n", i + 1);
 
-        printf("Weight: ");
-        scanf("%d", &weight[i]);
+        printf("Capacity (Ci): ");
+        scanf("%d", &t[i].capacity);
 
-        remaining[i] = burst[i];
-        total_weight += weight[i];
+        printf("Period (Ti): ");
+        scanf("%d", &t[i].period);
+
+        printf("Weight (Wi): ");
+        scanf("%d", &t[i].weight);
+
+        t[i].remaining = 0;
+        t[i].next_arrival = 0;
+
+        total_weight += t[i].weight;
     }
 
-    printf("\nExecution:\n");
+    printf("\nExecution Timeline:\n");
 
-    // Scheduling loop
-    while (completed < n) {
+    for(time = 0; time < 20; time++)
+    {
+        for(i = 0; i < n; i++)
+        {
+            if(time == t[i].next_arrival)
+            {
+                t[i].remaining = t[i].capacity;
+                t[i].next_arrival += t[i].period;
+            }
+        }
 
-        for (i = 0; i < n; i++) {
+        int idx = -1;
+        int max_share = -1;
 
-            if (remaining[i] > 0) {
+        for(i = 0; i < n; i++)
+        {
+            if(t[i].remaining > 0)
+            {
+                int share =
+                    (t[i].weight * TIME_QUANTUM) / total_weight;
 
-                // time slice calculation
-                int slice = (weight[i] * TIME_QUANTUM) / total_weight;
-
-                if (slice == 0) slice = 1; // minimum 1 unit
-
-                printf("P%d runs for %d units\n", i + 1, slice);
-
-                remaining[i] -= slice;
-
-                if (remaining[i] <= 0) {
-                    printf("P%d completed\n", i + 1);
-                    completed++;
-                    total_weight -= weight[i];
+                if(share > max_share)
+                {
+                    max_share = share;
+                    idx = i;
                 }
             }
+        }
+
+        if(idx == -1)
+        {
+            printf("Time %d -> Idle\n", time);
+        }
+        else
+        {
+            int exec;
+
+            if(t[idx].remaining < max_share)
+                exec = t[idx].remaining;
+            else
+                exec = max_share;
+
+            printf("Time %d -> Task %d (%d units)\n",
+                   time,
+                   t[idx].pid,
+                   exec);
+
+            t[idx].remaining -= exec;
+
+            time += exec - 1;
         }
     }
 
     return 0;
-} 
+}
